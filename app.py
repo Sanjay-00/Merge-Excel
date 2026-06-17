@@ -1,90 +1,91 @@
+import io
+
 import pandas as pd
 import streamlit as st
 
-from utils import build_file_summary, merge_files, read_single_file, to_excel_bytes
+from utils import (
+    align_to_schema,
+    build_file_summary,
+    get_sheet_names,
+    get_unmatched_pairs,
+    read_single_file,
+    to_excel_bytes,
+)
 
 st.set_page_config(page_title="Excel Merger", page_icon="📑", layout="wide")
 
 st.markdown("""
 <style>
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 2rem 3rem 4rem 3rem !important; }
+.block-container { padding: 1.5rem 3rem 2rem 3rem !important; }
 
-/* ── Header ── */
 .header-card {
-    background: linear-gradient(135deg, #1a3660 0%, #2a6099 100%);
-    border-radius: 14px;
-    padding: 1.85rem 2.25rem;
-    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 60%, #6366f1 100%);
+    border-radius: 12px;
+    padding: 1.4rem 1.8rem;
+    margin-bottom: 1rem;
 }
-
-/* ── Upload label ── */
 .upload-label {
-    color: #2563EB;
-    font-size: 0.82rem;
-    font-weight: 500;
-    margin: 0 0 0.5rem 0;
+    color: #1e3a5f;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0 0 0.35rem 0;
 }
-
-/* ── How it works card ── */
 .how-card {
     background: #ffffff;
     border: 1px solid #E5E7EB;
     border-left: 3px solid #2563EB;
     border-radius: 10px;
     padding: 1.25rem 1.4rem;
+    height: 100%;
 }
-
-/* ── Summary bar ── */
 .summary-bar {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
+    background: #FFF7ED;
+    border: 1px solid #FED7AA;
     border-radius: 8px;
-    padding: 0.6rem 1rem;
-    margin: 1rem 0 0 0;
+    padding: 0.45rem 0.9rem;
+    margin: 0.5rem 0 0 0;
     overflow: hidden;
 }
-
-/* ── Section header ── */
 .section-hdr {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin: 1.75rem 0 0.75rem 0;
+    gap: 0.6rem;
+    margin: 0.6rem 0 0.3rem 0;
 }
 
-/* ── Merge / Download buttons ── */
 div[data-testid="stButton"] button[kind="primary"] {
-    background-color: #2563EB !important;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 0.72rem !important;
-    font-size: 1rem !important;
+    padding: 0.65rem !important;
+    font-size: 0.92rem !important;
     font-weight: 600 !important;
     width: 100% !important;
-    letter-spacing: 0.01em !important;
-    transition: background 0.15s !important;
+    transition: opacity 0.15s !important;
 }
 div[data-testid="stButton"] button[kind="primary"]:hover {
-    background-color: #1D4ED8 !important;
+    opacity: 0.9 !important;
 }
 div[data-testid="stDownloadButton"] button {
-    background-color: #2563EB !important;
+    background: linear-gradient(135deg, #059669 0%, #0d9488 100%) !important;
     color: white !important;
     border: none !important;
     border-radius: 8px !important;
-    font-size: 1rem !important;
+    font-size: 0.92rem !important;
     font-weight: 600 !important;
     width: 100% !important;
 }
+div[data-testid="stDownloadButton"] button:hover {
+    opacity: 0.9 !important;
+}
 
-/* ── Compact file uploader ── */
 [data-testid="stFileUploaderDropzone"] {
-    background: #F9FAFB !important;
-    border: 1px solid #E5E7EB !important;
+    background: #FAFBFF !important;
+    border: 1px dashed #93C5FD !important;
     border-radius: 8px !important;
     padding: 0.4rem 0.75rem !important;
     min-height: unset !important;
@@ -99,30 +100,37 @@ div[data-testid="stDownloadButton"] button {
 [data-testid="stFileUploaderDropzoneInstructions"] span { display: none !important; }
 [data-testid="stFileUploaderDropzoneInstructions"] small {
     display: inline !important;
-    color: #9CA3AF !important;
+    color: #94A3B8 !important;
     font-size: 0.78rem !important;
 }
 
-/* ── Metric cards ── */
 [data-testid="stMetric"] {
-    background: #F9FAFB !important;
-    border: 1px solid #E5E7EB !important;
-    border-radius: 10px !important;
-    padding: 1rem 1.25rem !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 0.8rem !important;
+}
+[data-testid="stMetric"]:nth-of-type(1) {
+    background: #EFF6FF !important;
+    border: 1px solid #BFDBFE !important;
+}
+[data-testid="stMetric"]:nth-of-type(2) {
+    background: #F5F3FF !important;
+    border: 1px solid #DDD6FE !important;
+}
+[data-testid="stMetric"]:nth-of-type(3) {
+    background: #ECFDF5 !important;
+    border: 1px solid #A7F3D0 !important;
 }
 
-/* ── Sheet input placeholder ── */
 [data-testid="stTextInput"] input {
     font-size: 0.78rem !important;
 }
 [data-testid="stTextInput"] input::placeholder {
     font-size: 0.78rem !important;
-    color: #B0B8C4 !important;
+    color: #94A3B8 !important;
 }
 
-/* ── Expander ── */
 [data-testid="stExpander"] {
-    border: 1px solid #E5E7EB !important;
+    border: 1px solid #E2E8F0 !important;
     border-radius: 8px !important;
     overflow: hidden;
 }
@@ -130,38 +138,52 @@ div[data-testid="stDownloadButton"] button {
 """, unsafe_allow_html=True)
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-def section_header(title, badge=None):
+# ── Cached helpers ───────────────────────────────────────────────────────────
+@st.cache_data(show_spinner=False)
+def cached_sheet_names(file_content, filename):
+    buf = io.BytesIO(file_content)
+    buf.name = filename
+    return get_sheet_names(buf)
+
+
+@st.cache_data(show_spinner=False)
+def cached_read(file_content, filename, sheet_idx):
+    buf = io.BytesIO(file_content)
+    buf.name = filename
+    return read_single_file(buf, sheet_idx)
+
+
+def section_label(title, badge=None, badge_color="#6366F1"):
     badge_html = (
-        f'<span style="background:#EFF6FF;color:#2563EB;border-radius:20px;'
-        f'padding:0.1rem 0.6rem;font-size:0.68rem;font-weight:700;">{badge}</span>'
+        f'<span style="background:{badge_color}15;color:{badge_color};border-radius:20px;'
+        f'padding:0.08rem 0.5rem;font-size:0.62rem;font-weight:700;">{badge}</span>'
     ) if badge else ""
     st.markdown(f"""
     <div class="section-hdr">
-        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;
-                     letter-spacing:0.1em;color:#9CA3AF;white-space:nowrap;">{title}</span>
-        <div style="flex:1;height:1px;background:#F3F4F6;"></div>
+        <span style="font-size:0.62rem;font-weight:700;text-transform:uppercase;
+                     letter-spacing:0.1em;color:#64748B;white-space:nowrap;">{title}</span>
+        <div style="flex:1;height:1px;background:#F1F5F9;"></div>
         {badge_html}
     </div>
     """, unsafe_allow_html=True)
 
 
-# ── Header ────────────────────────────────────────────────────────────────────
+# ── Header ───────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="header-card">
-    <div style="font-size:1.85rem;font-weight:800;color:white;letter-spacing:-0.02em;margin-bottom:0.4rem;">
+    <div style="font-size:1.5rem;font-weight:800;color:white;letter-spacing:-0.02em;margin-bottom:0.15rem;">
         📑 Excel File Merger
     </div>
-    <div style="color:rgba(255,255,255,0.55);font-size:0.88rem;font-weight:400;">
-        Drop your Excel files to be merged &nbsp;·&nbsp; Get one consolidated master Excel file
+    <div style="color:rgba(255,255,255,0.4);font-size:0.8rem;">
+        Drop your Excel files · Get one consolidated master Excel file
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Two-column layout ─────────────────────────────────────────────────────────
-left, right = st.columns([2, 1], gap="large")
+# ── Row 1: Upload + How it works ─────────────────────────────────────────────
+col_upload, col_info = st.columns([5, 2], gap="medium")
 
-with right:
+with col_info:
     st.markdown("""
     <div class="how-card">
         <div style="font-size:0.82rem;font-weight:700;color:#111827;margin-bottom:1rem;
@@ -187,35 +209,37 @@ with right:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-
-    sheet_input = st.text_input(
-        "Sheet name",
-        value="",
-        placeholder="Leave blank for first sheet",
-        help="Applied to all files. Leave blank to always read the first sheet.",
-    )
-
-with left:
+with col_upload:
     st.markdown('<p class="upload-label">Drop your Excel files here or click Upload</p>',
                 unsafe_allow_html=True)
     uploaded_files = st.file_uploader(
-        "upload",
-        type=["xlsx", "xls", "xlsb"],
-        accept_multiple_files=True,
-        label_visibility="collapsed",
+        "upload", type=["xlsx", "xls", "xlsb"],
+        accept_multiple_files=True, label_visibility="collapsed",
     )
+    sheet_col, reboot_col = st.columns([8, 1])
+    with sheet_col:
+        sheet_input = st.text_input(
+            "Sheet name", value="", placeholder="Leave blank for first sheet",
+            help="Default sheet for all files. Leave blank for first sheet.",
+        )
+    with reboot_col:
+        st.markdown("<div style='height:1.65rem'></div>", unsafe_allow_html=True)
+        if st.button("🔄", help="Clear cache and reboot"):
+            st.cache_data.clear()
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
 
-# ── Summary bar ───────────────────────────────────────────────────────────────
+# ── Summary bar ──────────────────────────────────────────────────────────────
 if uploaded_files:
     names = ", ".join(f.name for f in uploaded_files)
     st.markdown(f"""
     <div class="summary-bar">
-        <span style="background:#2563EB;color:white;border-radius:20px;padding:0.15rem 0.65rem;
-                     font-size:0.72rem;font-weight:700;white-space:nowrap;flex-shrink:0;">
+        <span style="background:#EA580C;color:white;border-radius:20px;padding:0.1rem 0.5rem;
+                     font-size:0.68rem;font-weight:700;white-space:nowrap;flex-shrink:0;">
             {len(uploaded_files)} files
         </span>
-        <span style="color:#6B7280;font-size:0.8rem;overflow:hidden;
+        <span style="color:#9A3412;font-size:0.75rem;overflow:hidden;
                      text-overflow:ellipsis;white-space:nowrap;">{names}</span>
     </div>
     """, unsafe_allow_html=True)
@@ -223,45 +247,37 @@ if uploaded_files:
 if not uploaded_files:
     st.stop()
 
-# ── Reference file selector ───────────────────────────────────────────────────
-section_header("Reference File", "sets column schema")
+# ── Per-file sheet selection ─────────────────────────────────────────────────
+default_sheet = sheet_input.strip() or 0
 
-ref_name = st.selectbox(
-    "ref",
-    options=[f.name for f in uploaded_files],
-    index=0,
-    help="All other files are aligned to this file's columns. Extra columns dropped, missing filled with blank.",
-    label_visibility="collapsed",
-)
-ref_idx = next(i for i, f in enumerate(uploaded_files) if f.name == ref_name)
+all_sheet_names = {}
+for f in uploaded_files:
+    all_sheet_names[f.name] = cached_sheet_names(f.getvalue(), f.name)
 
-# Reset on change
-current_sig = (tuple(f.name for f in uploaded_files), ref_name)
-if st.session_state.get("last_file_sig") != current_sig:
-    st.session_state["merge_done"] = False
-    st.session_state["last_file_sig"] = current_sig
+has_multi_sheets = any(len(sheets) > 1 for sheets in all_sheet_names.values())
 
-# ── Read reference ────────────────────────────────────────────────────────────
-sheet_idx = sheet_input.strip() or 0
-ref_file = uploaded_files[ref_idx]
-ref_file.seek(0)
+file_sheet_map = {}
+if has_multi_sheets:
+    with st.expander("Sheet selection (per file)", expanded=False):
+        sheet_cols = st.columns(min(len(uploaded_files), 3))
+        for i, f in enumerate(uploaded_files):
+            sheets = all_sheet_names[f.name]
+            if len(sheets) <= 1:
+                file_sheet_map[f.name] = 0
+                continue
+            default_idx = 0
+            if isinstance(default_sheet, str) and default_sheet in sheets:
+                default_idx = sheets.index(default_sheet)
+            with sheet_cols[i % 3]:
+                file_sheet_map[f.name] = st.selectbox(
+                    f.name, options=sheets, index=default_idx, key=f"sheet_{f.name}",
+                )
+else:
+    for f in uploaded_files:
+        file_sheet_map[f.name] = default_sheet
 
-with st.spinner(f"Reading reference file: {ref_file.name}"):
-    first_df, first_err = read_single_file(ref_file, sheet_idx)
-
-if first_err:
-    st.error(f"Cannot read reference file: {first_err}")
-    st.stop()
-
-reference_cols = list(first_df.columns)
-
-with st.expander(f"Schema preview · {len(reference_cols)} columns · {ref_file.name}", expanded=False):
-    st.write(reference_cols)
-
-# ── File summary ──────────────────────────────────────────────────────────────
-section_header("File Summary", f"{len(uploaded_files)} files")
-
-summaries = []
+# ── Row 2: Reference file + Schema preview ──────────────────────────────────
+file_data = {}
 warnings = []
 progress = st.progress(0, text="Analyzing files...")
 
@@ -270,82 +286,176 @@ for i, f in enumerate(uploaded_files):
         int((i + 1) / len(uploaded_files) * 100),
         text=f"Reading {f.name} ({i + 1} of {len(uploaded_files)})"
     )
-    if i == ref_idx:
-        summaries.append(build_file_summary(f.name, first_df, reference_cols))
-    else:
-        f.seek(0)
-        df, err = read_single_file(f, sheet_idx)
-        if err:
-            summaries.append({
-                "File": f.name, "Rows": "-", "Total Columns": "-",
-                "Matched Columns": "-", "Missing Columns": "-", "Extra Columns (dropped)": "-",
-            })
-            warnings.append(f.name)
-        else:
-            summaries.append(build_file_summary(f.name, df, reference_cols))
+    df, err = cached_read(f.getvalue(), f.name, file_sheet_map[f.name])
+    file_data[f.name] = (df, err)
 
 progress.empty()
+
+col_ref, col_schema = st.columns([1, 1], gap="medium")
+
+with col_ref:
+    section_label("Reference File", "sets column schema", "#D97706")
+    ref_name = st.selectbox(
+        "ref", options=[f.name for f in uploaded_files], index=0,
+        help="All other files are aligned to this file's columns.",
+        label_visibility="collapsed",
+    )
+
+ref_idx = next(i for i, f in enumerate(uploaded_files) if f.name == ref_name)
+ref_df, ref_err = file_data[ref_name]
+
+if ref_err:
+    st.error(f"Cannot read reference file: {ref_err}")
+    st.stop()
+
+reference_cols = list(ref_df.columns)
+
+with col_schema:
+    section_label("Schema Preview", f"{len(reference_cols)} columns", "#6366F1")
+    with st.expander(f"{ref_name}", expanded=False):
+        st.write(reference_cols)
+
+current_sig = (tuple(f.name for f in uploaded_files), ref_name, str(file_sheet_map))
+if st.session_state.get("last_file_sig") != current_sig:
+    st.session_state["merge_done"] = False
+    st.session_state["last_file_sig"] = current_sig
+
+# ── File summary (full width) ────────────────────────────────────────────────
+section_label("File Summary", f"{len(uploaded_files)} files", "#0EA5E9")
+
+summaries = []
+for f in uploaded_files:
+    df, err = file_data[f.name]
+    if err:
+        summaries.append({
+            "File": f.name, "Rows": "-", "Total Columns": "-",
+            "Matched Columns": "-", "Missing Columns": "-", "Extra Columns (dropped)": "-",
+        })
+        warnings.append(f.name)
+    else:
+        summaries.append(build_file_summary(f.name, df, reference_cols))
 
 for w in warnings:
     st.warning(f"Could not read **{w}**")
 
 st.dataframe(pd.DataFrame(summaries), use_container_width=True, hide_index=True)
 
-# ── Merge button ──────────────────────────────────────────────────────────────
-st.markdown("<div style='height:0.25rem'></div>", unsafe_allow_html=True)
+# ── Unmatched column resolution ──────────────────────────────────────────────
+manual_maps = {}
+all_unmatched = {}
+for f in uploaded_files:
+    if f.name == ref_name:
+        continue
+    df, err = file_data[f.name]
+    if err:
+        continue
+    pairs = get_unmatched_pairs(df, reference_cols)
+    positional = [(fc, rc) for fc, rc in pairs if fc and rc]
+    if positional:
+        all_unmatched[f.name] = positional
 
+if all_unmatched:
+    total = sum(len(p) for p in all_unmatched.values())
+    with st.expander(f"Resolve {total} unmatched columns", expanded=False):
+        st.markdown(
+            '<span style="color:#64748B;font-size:0.75rem;">'
+            'These columns are at the same position but have different names. '
+            'Map them to the reference column or leave as null.</span>',
+            unsafe_allow_html=True,
+        )
+        for fname, pairs in all_unmatched.items():
+            st.markdown(
+                f'<span style="font-size:0.75rem;font-weight:600;color:#1e293b;">{fname}</span>',
+                unsafe_allow_html=True,
+            )
+            file_map = {}
+            for fc, rc in pairs:
+                col_l, col_r = st.columns([1, 1])
+                with col_l:
+                    st.markdown(
+                        f'<span style="font-size:0.72rem;color:#94A3B8;">File:</span> '
+                        f'<span style="font-size:0.75rem;font-weight:600;">{fc}</span>',
+                        unsafe_allow_html=True,
+                    )
+                with col_r:
+                    match = st.selectbox(
+                        f"{fc}", options=["Leave as null", rc],
+                        index=1, key=f"map_{fname}_{fc}",
+                        label_visibility="collapsed",
+                    )
+                if match != "Leave as null":
+                    file_map[fc] = match
+            manual_maps[fname] = file_map
+
+# ── Merge + KPIs + Download (below file summary) ────────────────────────────
 if st.button("▶  Merge Files", type="primary", use_container_width=True):
-    ordered = [uploaded_files[ref_idx]] + [f for i, f in enumerate(uploaded_files) if i != ref_idx]
-    for f in ordered:
-        f.seek(0)
-    with st.spinner("Merging..."):
-        merged_df, _, errors = merge_files(ordered, sheet_input)
-    for e in errors:
-        st.warning(e)
-    if merged_df is None:
-        st.error("Merge failed - no valid data could be read from the uploaded files.")
+    frames = []
+    errors = []
+    ordered_names = [ref_name] + [f.name for f in uploaded_files if f.name != ref_name]
+    merge_progress = st.progress(0, text="Starting merge...")
+
+    for idx, name in enumerate(ordered_names):
+        merge_progress.progress(
+            int((idx + 1) / (len(ordered_names) + 1) * 100),
+            text=f"Merging {name} ({idx + 1} of {len(ordered_names)})"
+        )
+        df, err = file_data[name]
+        if err:
+            errors.append(f"{name}: {err}")
+            continue
+        if name == ref_name:
+            frames.append(df)
+        else:
+            frames.append(align_to_schema(df, reference_cols, manual_maps.get(name)))
+
+    if not frames:
+        merge_progress.empty()
+        st.error("Merge failed, no valid data.")
         st.stop()
+
+    merge_progress.progress(95, text="Generating Excel file...")
+    merged_df = pd.concat(frames, ignore_index=True)
+    excel_bytes = to_excel_bytes(merged_df)
+    merge_progress.empty()
+
     st.session_state["merged_df"] = merged_df
+    st.session_state["excel_bytes"] = excel_bytes
     st.session_state["merge_done"] = True
     st.session_state["merge_errors"] = errors
 
-# ── Results ───────────────────────────────────────────────────────────────────
 if st.session_state.get("merge_done"):
     merged_df = st.session_state["merged_df"]
     errors = st.session_state.get("merge_errors", [])
 
-    st.markdown(f"""
-    <div style="display:flex;align-items:center;gap:0.85rem;background:#F0FDF4;
-                border:1px solid #BBF7D0;border-radius:10px;padding:0.9rem 1.25rem;
-                margin:1rem 0;">
-        <div style="background:#22C55E;color:white;border-radius:50%;width:1.6rem;height:1.6rem;
-                    display:flex;align-items:center;justify-content:center;font-size:0.8rem;
-                    font-weight:700;flex-shrink:0;">✓</div>
-        <div>
-            <div style="font-weight:700;color:#15803D;font-size:0.92rem;">Merge complete</div>
-            <div style="color:#166534;font-size:0.78rem;margin-top:0.1rem;">
-                Your master Excel file is ready to download below
-            </div>
-        </div>
+    k1, k2, k3, k4 = st.columns([1, 1, 1, 2])
+    k1.metric("Total Rows", f"{len(merged_df):,}")
+    k2.metric("Columns", len(merged_df.columns))
+    k3.metric("Files Merged", len(uploaded_files) - len(errors))
+    with k4:
+        st.markdown("<div style='height:0.85rem'></div>", unsafe_allow_html=True)
+        st.download_button(
+            label="⬇️  Download merged_output.xlsx",
+            data=st.session_state["excel_bytes"],
+            file_name="merged_output.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
+
+# ── Results preview (full width) ────────────────────────────────────────────
+if st.session_state.get("merge_done"):
+    merged_df = st.session_state["merged_df"]
+
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:0.6rem;background:#F0FDF4;
+                border:1px solid #BBF7D0;border-radius:8px;padding:0.5rem 0.9rem;
+                margin:0.4rem 0;">
+        <span style="background:#059669;color:white;border-radius:50%;width:1.2rem;height:1.2rem;
+                    display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;
+                    font-weight:700;flex-shrink:0;">✓</span>
+        <span style="font-weight:600;color:#065F46;font-size:0.82rem;">Merge complete</span>
+        <span style="color:#059669;font-size:0.72rem;">·  Ready to download</span>
     </div>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Rows", f"{len(merged_df):,}")
-    c2.metric("Columns", len(merged_df.columns))
-    c3.metric("Files Merged", len(uploaded_files) - len(errors))
-
-    st.markdown("<div style='height:0.25rem'></div>", unsafe_allow_html=True)
-
-    with st.expander("Preview - first 100 rows", expanded=True):
+    with st.expander(f"Preview, first 100 rows", expanded=True):
         st.dataframe(merged_df.head(100), use_container_width=True, hide_index=True)
-
-    st.markdown("<div style='height:0.25rem'></div>", unsafe_allow_html=True)
-
-    st.download_button(
-        label="⬇️  Download merged_output.xlsx",
-        data=to_excel_bytes(merged_df),
-        file_name="merged_output.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
-    )
