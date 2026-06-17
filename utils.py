@@ -142,8 +142,26 @@ def merge_files(uploaded_files, sheet_input):
     return merged, summaries, errors
 
 
-def to_excel_bytes(df):
+def to_excel_bytes(df, progress_cb=None):
+    import xlsxwriter
+
     buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name="Merged")
+    wb = xlsxwriter.Workbook(buf, {"constant_memory": True})
+    ws = wb.add_worksheet("Merged")
+
+    for ci, col in enumerate(df.columns):
+        ws.write(0, ci, col)
+
+    total = len(df)
+    chunk = 5000
+    for start in range(0, total, chunk):
+        end = min(start + chunk, total)
+        for ri, row in enumerate(df.iloc[start:end].values.tolist()):
+            for ci, val in enumerate(row):
+                if pd.notna(val):
+                    ws.write(start + ri + 1, ci, val)
+        if progress_cb:
+            progress_cb(end, total)
+
+    wb.close()
     return buf.getvalue()

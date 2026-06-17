@@ -392,13 +392,8 @@ if st.button("▶  Merge Files", type="primary", use_container_width=True):
     frames = []
     errors = []
     ordered_names = [ref_name] + [f.name for f in uploaded_files if f.name != ref_name]
-    merge_progress = st.progress(0, text="Starting merge...")
 
-    for idx, name in enumerate(ordered_names):
-        merge_progress.progress(
-            int((idx + 1) / (len(ordered_names) + 1) * 100),
-            text=f"Merging {name} ({idx + 1} of {len(ordered_names)})"
-        )
+    for name in ordered_names:
         df, err = file_data[name]
         if err:
             errors.append(f"{name}: {err}")
@@ -409,13 +404,17 @@ if st.button("▶  Merge Files", type="primary", use_container_width=True):
             frames.append(align_to_schema(df, reference_cols, manual_maps.get(name)))
 
     if not frames:
-        merge_progress.empty()
         st.error("Merge failed, no valid data.")
         st.stop()
 
-    merge_progress.progress(95, text="Generating Excel file...")
     merged_df = pd.concat(frames, ignore_index=True)
-    excel_bytes = to_excel_bytes(merged_df)
+    merge_progress = st.progress(0, text="Generating Excel file...")
+
+    def update_progress(written, total):
+        pct = int(written / total * 100)
+        merge_progress.progress(pct, text=f"Writing rows {written:,} of {total:,}")
+
+    excel_bytes = to_excel_bytes(merged_df, progress_cb=update_progress)
     merge_progress.empty()
 
     st.session_state["merged_df"] = merged_df
