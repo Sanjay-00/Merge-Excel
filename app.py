@@ -232,15 +232,18 @@ with col_upload:
 
 # ── Summary bar ──────────────────────────────────────────────────────────────
 if uploaded_files:
-    names = ", ".join(f.name for f in uploaded_files)
+    file_pills = "".join(
+        f'<span style="background:#FFF;border:1px solid #FDBA74;border-radius:6px;'
+        f'padding:0.15rem 0.5rem;font-size:0.7rem;color:#9A3412;white-space:nowrap;">{f.name}</span>'
+        for f in uploaded_files
+    )
     st.markdown(f"""
     <div class="summary-bar">
         <span style="background:#EA580C;color:white;border-radius:20px;padding:0.1rem 0.5rem;
                      font-size:0.68rem;font-weight:700;white-space:nowrap;flex-shrink:0;">
             {len(uploaded_files)} files
         </span>
-        <span style="color:#9A3412;font-size:0.75rem;overflow:hidden;
-                     text-overflow:ellipsis;white-space:nowrap;">{names}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:0.35rem;">{file_pills}</div>
     </div>
     """, unsafe_allow_html=True)
 
