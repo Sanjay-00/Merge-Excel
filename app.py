@@ -202,10 +202,6 @@ with col_info:
             (4, 'Download the <span style="font-weight:700;color:#111827;">master Excel file</span>'),
         ]
     ]) + """
-        <div style="border-top:1px solid #F3F4F6;margin:0.9rem 0 0.7rem 0;"></div>
-        <div style="color:#93C5FD;font-size:0.72rem;">
-            .xlsx &nbsp;·&nbsp; .xls &nbsp;·&nbsp; .xlsb &nbsp;·&nbsp; up to 200 MB per file
-        </div>
     </div>
     """, unsafe_allow_html=True)
 
