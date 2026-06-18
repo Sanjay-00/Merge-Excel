@@ -117,33 +117,6 @@ def align_to_schema(df, reference_cols, manual_map=None):
     return df.reindex(columns=reference_cols)
 
 
-def merge_files(uploaded_files, sheet_input):
-    sheet_name_or_index = sheet_input.strip() or 0
-
-    first_file = uploaded_files[0]
-    first_df, err = read_single_file(first_file, sheet_name_or_index)
-    if err:
-        return None, [], [f"{first_file.name}: {err}"]
-
-    reference_cols = list(first_df.columns)
-    frames = [first_df]
-    summaries = [build_file_summary(first_file.name, first_df, reference_cols)]
-    errors = []
-
-    for f in uploaded_files[1:]:
-        df, err = read_single_file(f, sheet_name_or_index)
-        if err:
-            errors.append(f"{f.name}: {err}")
-            continue
-        summaries.append(build_file_summary(f.name, df, reference_cols))
-        frames.append(align_to_schema(df, reference_cols))
-
-    if not frames:
-        return None, summaries, errors
-
-    merged = pd.concat(frames, ignore_index=True)
-    return merged, summaries, errors
-
 
 def to_excel_bytes(df, progress_cb=None):
     import xlsxwriter
