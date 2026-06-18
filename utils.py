@@ -82,28 +82,31 @@ def get_unmatched_pairs(df, reference_cols):
     df = _normalize_columns(df, reference_cols)
     ref_set = set(reference_cols)
     exact_matches = set(df.columns) & ref_set
-    unmatched_file = [c for c in df.columns if c not in exact_matches]
+    unmatched_file = [c for c in df.columns if c not in exact_matches and not c.startswith("Unnamed")]
     unmatched_ref = [c for c in reference_cols if c not in exact_matches]
     pairs = []
+    used_file = set()
+    used_ref = set()
+
     if len(df.columns) >= len(reference_cols):
-        used_file = set()
-        used_ref = set()
         for fc, rc in zip(list(df.columns)[:len(reference_cols)], reference_cols):
             if fc not in exact_matches and rc not in exact_matches:
                 pairs.append((fc, rc))
                 used_file.add(fc)
                 used_ref.add(rc)
-        for fc in unmatched_file:
-            if fc not in used_file:
-                pairs.append((fc, None))
-        for rc in unmatched_ref:
-            if rc not in used_ref:
-                pairs.append((None, rc))
-    else:
-        for fc in unmatched_file:
+
+    remaining_file = [c for c in unmatched_file if c not in used_file]
+    remaining_ref = [c for c in unmatched_ref if c not in used_ref]
+    for fc in remaining_file:
+        options = list(remaining_ref)
+        if options:
+            pairs.append((fc, options))
+            remaining_ref = []
+        else:
             pairs.append((fc, None))
-        for rc in unmatched_ref:
-            pairs.append((None, rc))
+    for rc in remaining_ref:
+        pairs.append((None, rc))
+
     return pairs
 
 
