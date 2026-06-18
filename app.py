@@ -353,17 +353,19 @@ for f in uploaded_files:
     if err:
         continue
     pairs = get_unmatched_pairs(df, reference_cols)
-    positional = [(fc, rc) for fc, rc in pairs if fc and rc]
-    if positional:
-        all_unmatched[f.name] = positional
+    resolvable = []
+    for fc, rc in pairs:
+        if fc and rc:
+            resolvable.append((fc, rc if isinstance(rc, list) else [rc]))
+    if resolvable:
+        all_unmatched[f.name] = resolvable
 
 if all_unmatched:
     total = sum(len(p) for p in all_unmatched.values())
     with st.expander(f"Resolve {total} unmatched columns", expanded=False):
         st.markdown(
             '<span style="color:#64748B;font-size:0.75rem;">'
-            'These columns are at the same position but have different names. '
-            'Map them to the reference column or leave as null.</span>',
+            'Map file columns to reference columns or leave as null.</span>',
             unsafe_allow_html=True,
         )
         for fname, pairs in all_unmatched.items():
@@ -372,7 +374,7 @@ if all_unmatched:
                 unsafe_allow_html=True,
             )
             file_map = {}
-            for fc, rc in pairs:
+            for fc, rc_options in pairs:
                 col_l, col_r = st.columns([1, 1])
                 with col_l:
                     st.markdown(
@@ -381,8 +383,9 @@ if all_unmatched:
                         unsafe_allow_html=True,
                     )
                 with col_r:
+                    options = ["Leave as null"] + rc_options
                     match = st.selectbox(
-                        f"{fc}", options=["Leave as null", rc],
+                        f"{fc}", options=options,
                         index=1, key=f"map_{fname}_{fc}",
                         label_visibility="collapsed",
                     )
