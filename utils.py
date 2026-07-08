@@ -78,6 +78,11 @@ def build_file_summary(filename, df, reference_cols):
     }
 
 
+def _similarity(a, b):
+    from difflib import SequenceMatcher
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+
+
 def get_unmatched_pairs(df, reference_cols):
     df = _normalize_columns(df, reference_cols)
     ref_set = set(reference_cols)
@@ -85,28 +90,9 @@ def get_unmatched_pairs(df, reference_cols):
     unmatched_file = [c for c in df.columns if c not in exact_matches and not c.startswith("Unnamed")]
     unmatched_ref = [c for c in reference_cols if c not in exact_matches]
     pairs = []
-    used_file = set()
-    used_ref = set()
-
-    if len(df.columns) >= len(reference_cols):
-        for fc, rc in zip(list(df.columns)[:len(reference_cols)], reference_cols):
-            if fc not in exact_matches and rc not in exact_matches:
-                pairs.append((fc, rc))
-                used_file.add(fc)
-                used_ref.add(rc)
-
-    remaining_file = [c for c in unmatched_file if c not in used_file]
-    remaining_ref = [c for c in unmatched_ref if c not in used_ref]
-    for fc in remaining_file:
-        options = list(remaining_ref)
-        if options:
-            pairs.append((fc, options))
-            remaining_ref = []
-        else:
-            pairs.append((fc, None))
-    for rc in remaining_ref:
-        pairs.append((None, rc))
-
+    for fc in unmatched_file:
+        sorted_refs = sorted(unmatched_ref, key=lambda rc: _similarity(fc, rc), reverse=True)
+        pairs.append((fc, sorted_refs))
     return pairs
 
 

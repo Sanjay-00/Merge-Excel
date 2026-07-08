@@ -179,10 +179,7 @@ for f in uploaded_files:
     if err:
         continue
     pairs = get_unmatched_pairs(df, reference_cols)
-    resolvable = []
-    for fc, rc in pairs:
-        if fc and rc:
-            resolvable.append((fc, rc if isinstance(rc, list) else [rc]))
+    resolvable = [(fc, rc) for fc, rc in pairs if rc]
     if resolvable:
         all_unmatched[f.name] = resolvable
 
