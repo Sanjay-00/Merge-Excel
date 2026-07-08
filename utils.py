@@ -25,6 +25,7 @@ def read_single_file(uploaded_file, sheet_name_or_index):
             engine=engine,
         )
         df.columns = df.columns.str.strip()
+        df = df.loc[:, ~df.columns.duplicated()]
         df.dropna(how="all", inplace=True)
         return df, None
     except Exception as e:
@@ -100,6 +101,7 @@ def align_to_schema(df, reference_cols, manual_map=None):
     df = _normalize_columns(df, reference_cols)
     if manual_map:
         df = df.rename(columns=manual_map)
+    df = df.loc[:, ~df.columns.duplicated()]
     return df.reindex(columns=reference_cols)
 
 
