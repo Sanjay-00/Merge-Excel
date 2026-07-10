@@ -1,35 +1,6 @@
-import io
-import pandas as pd
+from difflib import SequenceMatcher
 
-
-def _get_engine(filename):
-    ext = filename.rsplit(".", 1)[-1].lower()
-    return {"xls": "xlrd", "xlsb": "pyxlsb"}.get(ext, "openpyxl")
-
-
-def get_sheet_names(uploaded_file):
-    try:
-        engine = _get_engine(uploaded_file.name)
-        xls = pd.ExcelFile(uploaded_file, engine=engine)
-        return xls.sheet_names
-    except Exception:
-        return []
-
-
-def read_single_file(uploaded_file, sheet_name_or_index):
-    try:
-        engine = _get_engine(uploaded_file.name)
-        df = pd.read_excel(
-            uploaded_file,
-            sheet_name=sheet_name_or_index,
-            engine=engine,
-        )
-        df.columns = df.columns.str.strip()
-        df = df.loc[:, ~df.columns.duplicated()]
-        df.dropna(how="all", inplace=True)
-        return df, None
-    except Exception as e:
-        return None, str(e)
+from core.dedupe import duplicated_mask
 
 
 def _is_truncated(short, long):
@@ -79,8 +50,7 @@ def build_file_summary(filename, df, reference_cols):
     }
 
 
-def _similarity(a, b):
-    from difflib import SequenceMatcher
+def similarity(a, b):
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 
@@ -92,40 +62,62 @@ def get_unmatched_pairs(df, reference_cols):
     unmatched_ref = [c for c in reference_cols if c not in exact_matches]
     pairs = []
     for fc in unmatched_file:
-        sorted_refs = sorted(unmatched_ref, key=lambda rc: _similarity(fc, rc), reverse=True)
+        sorted_refs = sorted(unmatched_ref, key=lambda rc: similarity(fc, rc), reverse=True)
         pairs.append((fc, sorted_refs))
     return pairs
 
 
+_DTYPE_CATEGORIES = {
+    "i": "numeric", "u": "numeric", "f": "numeric",
+    "O": "text", "b": "boolean", "M": "datetime", "m": "duration",
+}
+
+
+def detect_dtype_mismatches(frames, columns):
+    """pd.concat silently combines a numeric column from one file with a text
+    column of the same name from another into one inconsistent object column
+    (e.g. real ints mixed with strings) -- no coercion, no warning. This scans
+    the already schema-aligned frames and flags any column where more than
+    one broad dtype category (numeric / text / boolean / datetime / duration)
+    appears across files, so the merge tool can surface it instead of staying
+    silent. int64-vs-float64 within "numeric" is NOT flagged -- that's a
+    routine, harmless pandas quirk (a blank cell upcasts a column to float),
+    not a real type conflict.
+    """
+    mismatches = {}
+    for col in columns:
+        categories = set()
+        for frame in frames:
+            if col not in frame.columns:
+                continue
+            non_null = frame[col].dropna()
+            if non_null.empty:
+                continue
+            categories.add(_DTYPE_CATEGORIES.get(non_null.dtype.kind, non_null.dtype.kind))
+        if len(categories) > 1:
+            mismatches[col] = sorted(categories)
+    return mismatches
+
+
 def align_to_schema(df, reference_cols, manual_map=None):
+    """Normalize df's columns onto reference_cols and reindex.
+
+    Returns (aligned_df, dropped) where dropped is a list of
+    (original_file_column, reference_column_it_collided_on) tuples for any
+    column that had to be dropped because two source columns resolved to the
+    same reference column (first occurrence wins, same as before - this is
+    now just reported instead of silent).
+    """
+    original_cols = list(df.columns)
     df = _normalize_columns(df, reference_cols)
     if manual_map:
         df = df.rename(columns=manual_map)
-    df = df.loc[:, ~df.columns.duplicated()]
-    return df.reindex(columns=reference_cols)
 
-
-
-def to_excel_bytes(df, progress_cb=None):
-    import xlsxwriter
-
-    buf = io.BytesIO()
-    wb = xlsxwriter.Workbook(buf, {"constant_memory": True})
-    ws = wb.add_worksheet("Merged")
-
-    for ci, col in enumerate(df.columns):
-        ws.write(0, ci, col)
-
-    total = len(df)
-    chunk = 5000
-    for start in range(0, total, chunk):
-        end = min(start + chunk, total)
-        for ri, row in enumerate(df.iloc[start:end].values.tolist()):
-            for ci, val in enumerate(row):
-                if pd.notna(val):
-                    ws.write(start + ri + 1, ci, val)
-        if progress_cb:
-            progress_cb(end, total)
-
-    wb.close()
-    return buf.getvalue()
+    mask = duplicated_mask(df)
+    dropped = [
+        (original_cols[i], df.columns[i])
+        for i in range(len(df.columns))
+        if mask[i]
+    ]
+    df = df.loc[:, ~mask]
+    return df.reindex(columns=reference_cols), dropped
