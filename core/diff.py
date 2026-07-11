@@ -28,9 +28,21 @@ def diff_columns(df_a, df_b):
 
 
 def _values_equal(x, y):
+    """A plain x == y flags "100" (text) vs 100 (number) as a real change --
+    a false positive that's very plausible in practice, since the same
+    column can easily get exported as text in one file version and as a
+    real number in another. Tolerate type-only differences: try numeric
+    equality first, then a whitespace-stripped string comparison, before
+    falling back to strict equality."""
     if pd.isna(x) and pd.isna(y):
         return True
-    return x == y
+    if x == y:
+        return True
+    try:
+        return float(x) == float(y)
+    except (TypeError, ValueError):
+        pass
+    return str(x).strip() == str(y).strip()
 
 
 def diff_rows(df_a, df_b_normalized, key_columns, common_columns):

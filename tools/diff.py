@@ -105,12 +105,22 @@ def render_diff_page():
     r3.metric("Changed Rows", len(row_result["changed"]))
     r4.metric("Unchanged Rows", row_result["unchanged_count"])
 
-    with st.expander("Added rows (only in File B)", expanded=False):
-        st.dataframe(row_result["added"], use_container_width=True, hide_index=True)
-    with st.expander("Removed rows (only in File A)", expanded=False):
-        st.dataframe(row_result["removed"], use_container_width=True, hide_index=True)
-    with st.expander("Changed rows", expanded=True):
-        st.dataframe(row_result["changed"], use_container_width=True, hide_index=True)
+    # Streamlit's dataframe grid can crash the browser tab when handed a very
+    # large/wide table in one shot (seen in practice on a 9k-row changed set
+    # from a duplicate-heavy key column), so cap what's rendered, same pattern
+    # Merge already uses for its preview. The download below is unaffected,
+    # since it's built from the full, uncapped result.
+    PREVIEW_ROW_CAP = 500
+
+    def _render_capped(label, df, expanded=False):
+        with st.expander(label, expanded=expanded):
+            if len(df) > PREVIEW_ROW_CAP:
+                st.caption(f"Showing first {PREVIEW_ROW_CAP:,} of {len(df):,} rows. Download the full report below to see everything.")
+            st.dataframe(df.head(PREVIEW_ROW_CAP), use_container_width=True, hide_index=True)
+
+    _render_capped("Added rows (only in File B)", row_result["added"])
+    _render_capped("Removed rows (only in File A)", row_result["removed"])
+    _render_capped("Changed rows", row_result["changed"], expanded=True)
 
     with st.spinner("Preparing diff report..."):
         buf = io.BytesIO()
