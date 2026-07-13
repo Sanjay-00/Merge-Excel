@@ -328,8 +328,8 @@ section[data-testid="stSidebar"] {
     background: var(--eq-surface) !important;
     border-right: 1px solid var(--eq-border) !important;
 }
-section[data-testid="stSidebar"] [data-testid="stLogo"] {
-    height: 2.5rem !important;
+section[data-testid="stSidebar"] [data-testid="stSidebarLogo"] {
+    height: 3.0rem !important;
     margin: 0.3rem 0 1.1rem 0.1rem;
 }
 section[data-testid="stSidebar"] div[data-testid="stButton"] {
