@@ -1,4 +1,9 @@
 streamlit==1.38.0
+# streamlit 1.38.0 requires pillow<11,>=7.1.0; pinned to the newest release
+# in that range so the resolver can't fall back to an old Pillow with no
+# prebuilt wheel for the deploy host's Python, which forces a from-source
+# build that fails without a C toolchain.
+pillow==10.4.0
 pandas>=2.2.0
 openpyxl>=3.1.2
 xlsxwriter>=3.2.0
