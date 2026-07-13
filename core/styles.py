@@ -21,7 +21,20 @@ CSS = """
     --eq-radius: 10px;
 }
 
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
+/* Newer Streamlit moved the sidebar re-expand control (shown only once the
+   sidebar is collapsed) inside this same <header> -- hiding the whole
+   header (as before) hid that control too, leaving no way to bring the
+   sidebar back. Keep the header itself, hide only its decorative parts. */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+[data-testid="stMainMenu"],
+[data-testid="stAppDeployButton"],
+[data-testid="stToolbarActions"] {
+    display: none !important;
+}
 .stApp { background: var(--eq-bg); }
 body, .stApp, .stMarkdown, p, span, div, label, li { color: var(--eq-text); }
 .block-container { padding: 1.75rem 3.5rem 2.5rem 3.5rem !important; max-width: 1400px; }
@@ -431,23 +444,25 @@ section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
    own sanitized HTML fragment, so the browser silently auto-closed it and
    left a phantom empty box).
 
-   IMPORTANT: every vertical block in Streamlit -- not just st.container(),
-   also every st.columns() column -- shares this exact same
-   "stVerticalBlockBorderWrapper" testid. A full DOM dump confirmed each card
-   actually sits 3 levels deep: the outer gutter column, the per-card column,
-   then our real st.container(border=True). A bare selector on the testid
-   matches all three, which is why hovering a card also faintly lit up its
-   two ancestor wrappers. The :has() chain below requires .tool-card-icon at
-   an EXACT shallow depth that only the innermost, true card wrapper
-   satisfies -- the two ancestor wrappers need many more hops to reach any
-   icon, so they never match. If this structure changes in a future
-   Streamlit version, re-verify with a DOM dump before adjusting the depth. */
+   Streamlit (verified on 1.59.2) no longer wraps a bordered st.container()
+   in a separate "stVerticalBlockBorderWrapper" -- the border now lives
+   directly on the st.container()'s own "stVerticalBlock", one level above
+   an "stElementContainer". The chain below requires .tool-card-icon at
+   an EXACT shallow depth (all direct-child combinators) that only the
+   card's own stVerticalBlock satisfies -- ancestor stVerticalBlocks (the
+   column, the gutter) need more hops through an intervening
+   stLayoutWrapper to reach any icon, so they never match. Since the match
+   is keyed off the .tool-card-icon class (unique to these cards), this
+   also self-scopes correctly even though every st.container() and
+   st.columns() column shares the same "stVerticalBlock" testid. If this
+   breaks again on a future Streamlit version, re-verify with a DOM dump
+   before adjusting the depth. */
 @keyframes tileFadeInUp {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
 }
-div[data-testid="stVerticalBlockBorderWrapper"]:has(
-    > div > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] > div.stMarkdown > div[data-testid="stMarkdownContainer"] > div.tool-card-icon
+div[data-testid="stVerticalBlock"]:has(
+    > div[data-testid="stElementContainer"] > div.stMarkdown > div > div[data-testid="stMarkdownContainer"] > div.tool-card-icon
 ) {
     border-radius: 12px !important;
     border-color: var(--eq-border) !important;
@@ -465,16 +480,16 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(
        than transitions, which silently killed the :hover lift below. */
     animation: tileFadeInUp 0.5s ease backwards;
 }
-div[data-testid="stVerticalBlockBorderWrapper"]:has(
-    > div > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] > div.stMarkdown > div[data-testid="stMarkdownContainer"] > div.tool-card-icon
+div[data-testid="stVerticalBlock"]:has(
+    > div[data-testid="stElementContainer"] > div.stMarkdown > div > div[data-testid="stMarkdownContainer"] > div.tool-card-icon
 ):hover {
     border-color: var(--eq-accent) !important;
     transform: translateY(-4px);
     box-shadow: 0 14px 28px -10px rgba(99, 102, 241, 0.3);
 }
-[data-testid="stHorizontalBlock"] > div:nth-of-type(1) div[data-testid="stVerticalBlockBorderWrapper"]:has(> div > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] > div.stMarkdown > div[data-testid="stMarkdownContainer"] > div.tool-card-icon) { animation-delay: 0.02s; }
-[data-testid="stHorizontalBlock"] > div:nth-of-type(2) div[data-testid="stVerticalBlockBorderWrapper"]:has(> div > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] > div.stMarkdown > div[data-testid="stMarkdownContainer"] > div.tool-card-icon) { animation-delay: 0.08s; }
-[data-testid="stHorizontalBlock"] > div:nth-of-type(3) div[data-testid="stVerticalBlockBorderWrapper"]:has(> div > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] > div.stMarkdown > div[data-testid="stMarkdownContainer"] > div.tool-card-icon) { animation-delay: 0.14s; }
+[data-testid="stHorizontalBlock"] > div:nth-of-type(1) div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] > div.stMarkdown > div > div[data-testid="stMarkdownContainer"] > div.tool-card-icon) { animation-delay: 0.02s; }
+[data-testid="stHorizontalBlock"] > div:nth-of-type(2) div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] > div.stMarkdown > div > div[data-testid="stMarkdownContainer"] > div.tool-card-icon) { animation-delay: 0.08s; }
+[data-testid="stHorizontalBlock"] > div:nth-of-type(3) div[data-testid="stVerticalBlock"]:has(> div[data-testid="stElementContainer"] > div.stMarkdown > div > div[data-testid="stMarkdownContainer"] > div.tool-card-icon) { animation-delay: 0.14s; }
 .tool-card-icon {
     width: 2.6rem;
     height: 2.6rem;
@@ -486,8 +501,8 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(
     margin: 0.2rem 0 0.9rem 0;
     transition: transform 0.2s ease;
 }
-div[data-testid="stVerticalBlockBorderWrapper"]:has(
-    > div > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] > div.stMarkdown > div[data-testid="stMarkdownContainer"] > div.tool-card-icon
+div[data-testid="stVerticalBlock"]:has(
+    > div[data-testid="stElementContainer"] > div.stMarkdown > div > div[data-testid="stMarkdownContainer"] > div.tool-card-icon
 ):hover .tool-card-icon {
     transform: scale(1.08) translateY(-1px);
 }
