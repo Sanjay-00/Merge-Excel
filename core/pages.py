@@ -3,6 +3,7 @@ import streamlit as st
 from tools.concat_sheets import render_concat_page
 from tools.diff import render_diff_page
 from tools.merge import render_merge_page
+from tools.pdf_to_excel import render_pdf_page
 from tools.reduce_size import render_reduce_size_page
 from tools.split import render_split_page
 from tools.trim_columns import render_trim_page
@@ -47,5 +48,11 @@ TOOL_PAGES = {
         "icon": "📉",
         "color": "#10B981",
         "description": "Shrink an Excel file with an honest before/after breakdown of what was removed.",
+    },
+    "pdf": {
+        "page": st.Page(render_pdf_page, title="PDF to Excel", icon="📄", url_path="pdf-to-excel"),
+        "icon": "📄",
+        "color": "#EF4444",
+        "description": "Pull tables out of a text-layer PDF into a real Excel workbook.",
     },
 }

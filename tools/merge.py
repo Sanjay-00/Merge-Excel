@@ -185,8 +185,11 @@ def render_merge_page():
             st.error("Merge failed, no valid data.")
             st.stop()
 
-        render_dropped_columns_warning(dropped_by_file)
-        render_dtype_mismatch_warning(detect_dtype_mismatches(frames, reference_cols))
+        # Stored (not rendered here) so the warnings survive the rerun that
+        # any later interaction triggers (e.g. clicking Download) instead of
+        # vanishing while the results and download button persist.
+        st.session_state[ns_key(TOOL, "dropped_by_file")] = dropped_by_file
+        st.session_state[ns_key(TOOL, "dtype_mismatches")] = detect_dtype_mismatches(frames, reference_cols)
         merged_df = pd.concat(frames, ignore_index=True)
         merge_progress = st.progress(0, text="Generating Excel file...")
 
@@ -206,6 +209,13 @@ def render_merge_page():
     if st.session_state.get(ns_key(TOOL, "merge_done")):
         merged_df = st.session_state[ns_key(TOOL, "merged_df")]
         errors = st.session_state.get(ns_key(TOOL, "merge_errors"), [])
+
+        render_dropped_columns_warning(st.session_state.get(ns_key(TOOL, "dropped_by_file"), {}))
+        render_dtype_mismatch_warning(st.session_state.get(ns_key(TOOL, "dtype_mismatches"), {}))
+        if errors:
+            st.warning(
+                "Skipped file(s) that could not be read:\n\n" + "\n\n".join(f"- {e}" for e in errors)
+            )
 
         k1, k2, k3, k4 = st.columns([1, 1, 1, 2])
         k1.metric("Total Rows", f"{len(merged_df):,}")

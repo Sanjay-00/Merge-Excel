@@ -166,7 +166,9 @@ def render_concat_page():
             st.error("Concat failed, no valid data.")
             st.stop()
 
-        render_dropped_columns_warning(dropped_by_sheet)
+        # Stored (not rendered here) so the warning survives later reruns
+        # (e.g. clicking Download) instead of vanishing while results persist.
+        st.session_state[ns_key(TOOL, "dropped_by_sheet")] = dropped_by_sheet
         concat_df = pd.concat(frames, ignore_index=True)
         concat_progress = st.progress(0, text="Generating Excel file...")
 
@@ -186,6 +188,12 @@ def render_concat_page():
     if st.session_state.get(ns_key(TOOL, "concat_done")):
         concat_df = st.session_state[ns_key(TOOL, "concat_df")]
         errors = st.session_state.get(ns_key(TOOL, "concat_errors"), [])
+
+        render_dropped_columns_warning(st.session_state.get(ns_key(TOOL, "dropped_by_sheet"), {}))
+        if errors:
+            st.warning(
+                "Skipped sheet(s) that could not be read:\n\n" + "\n\n".join(f"- {e}" for e in errors)
+            )
 
         k1, k2, k3, k4 = st.columns([1, 1, 1, 2])
         k1.metric("Total Rows", f"{len(concat_df):,}")

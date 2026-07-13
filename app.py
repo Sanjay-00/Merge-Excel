@@ -1,3 +1,13 @@
+# onnxruntime (OCR backend for the PDF to Excel tool) must be imported
+# before pandas on this platform: importing pandas first leaves onnxruntime's
+# native DLL unable to initialize ("DLL load failed ... initialization
+# routine failed"), verified on onnxruntime 1.22 and 1.27 on Windows. Loading
+# it first costs nothing when unused and is a no-op if it isn't installed.
+try:
+    import onnxruntime  # noqa: F401
+except ImportError:
+    pass
+
 import streamlit as st
 
 from core.styles import CSS

@@ -70,7 +70,9 @@ def render_reduce_size_page():
 
     if output_format == "csv":
         with st.spinner("Writing CSV..."):
-            output_bytes = working_df.to_csv(index=False).encode("utf-8")
+            # utf-8-sig: Excel only auto-detects UTF-8 CSVs when a BOM is
+            # present; plain utf-8 garbles non-ASCII text on open.
+            output_bytes = working_df.to_csv(index=False).encode("utf-8-sig")
         file_name = "reduced_output.csv"
         mime = "text/csv"
     else:

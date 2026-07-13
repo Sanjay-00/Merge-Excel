@@ -3,7 +3,7 @@ import streamlit as st
 from core.pages import TOOL_PAGES
 from ui.shared import render_hero
 
-TOOL_ORDER = ["merge", "split", "concat", "diff", "trim", "reduce"]
+TOOL_ORDER = ["merge", "split", "concat", "diff", "trim", "reduce", "pdf"]
 
 
 def _render_tool_card(entry):
@@ -36,8 +36,11 @@ def render_home_page():
             "that reconciles renamed and truncated headers instead of just concatenating blindly.",
         )
 
-        row1 = st.columns(3, gap="medium")
-        row2 = st.columns(3, gap="medium")
-        for col, key in zip(row1 + row2, TOOL_ORDER):
+        # One row of 3 columns per 3 tools - zip against a fixed 6-column
+        # list would silently drop every tool past the 6th.
+        cols = []
+        for _ in range(0, len(TOOL_ORDER), 3):
+            cols.extend(st.columns(3, gap="medium"))
+        for col, key in zip(cols, TOOL_ORDER):
             with col:
                 _render_tool_card(TOOL_PAGES[key])
