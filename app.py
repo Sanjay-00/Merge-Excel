@@ -13,7 +13,7 @@ import streamlit as st
 from core.styles import CSS
 from pages_registry import get_pages
 
-st.set_page_config(page_title="Excel Toolkit", page_icon="📑", layout="wide")
+st.set_page_config(page_title="Data Forge", page_icon="📑", layout="wide")
 st.markdown(CSS, unsafe_allow_html=True)
 st.logo("assets/wordmark.png", icon_image="assets/logo_icon.png")
 
