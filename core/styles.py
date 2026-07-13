@@ -330,7 +330,7 @@ section[data-testid="stSidebar"] {
 }
 section[data-testid="stSidebar"] [data-testid="stSidebarLogo"] {
     height: 2.2rem !important;
-    margin: 0.3rem 0 1.1rem 0.1rem;
+    margin: 0.7rem 0 1.1rem 0.1rem;
 }
 section[data-testid="stSidebar"] div[data-testid="stButton"] {
     margin-top: 2rem;
