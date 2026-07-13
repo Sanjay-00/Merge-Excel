@@ -316,7 +316,7 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid var(--eq-border) !important;
 }
 section[data-testid="stSidebar"] [data-testid="stLogo"] {
-    height: 1.5rem !important;
+    height: 2.1rem !important;
     margin: 0.3rem 0 1.1rem 0.1rem;
 }
 section[data-testid="stSidebar"] div[data-testid="stButton"] {

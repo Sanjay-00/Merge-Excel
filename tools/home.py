@@ -30,8 +30,8 @@ def render_home_page():
     _, main_col, _ = st.columns([1, 16, 1])
     with main_col:
         render_hero(
-            "Schema-aware Excel tools, runs on your machine",
-            ["Your Excel Toolkit,", "Organized."],
+            "Schema-aware, asks when unsure",
+            ["Your Data, Forged."],
             "Merge, split, diff, and clean Excel files - with a schema-aware matching engine "
             "that reconciles renamed and truncated headers instead of just concatenating blindly.",
         )
