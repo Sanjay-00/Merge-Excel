@@ -26,4 +26,4 @@ with st.sidebar:
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
-    st.caption("v1.0 · runs locally, no data leaves your machine")
+    st.caption("v1.0")
