@@ -457,7 +457,13 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(
     flex-direction: column;
     justify-content: flex-start;
     transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-    animation: tileFadeInUp 0.5s ease both;
+    /* fill-mode backwards (not both): holds the pre-animation state during
+       the staggered animation-delay below so cards don't flash unstyled,
+       but releases the transform property once the entrance finishes (its
+       "to" keyframe is translateY(0), the same as unanimated). "both" was
+       holding transform forever after entrance, at higher cascade priority
+       than transitions, which silently killed the :hover lift below. */
+    animation: tileFadeInUp 0.5s ease backwards;
 }
 div[data-testid="stVerticalBlockBorderWrapper"]:has(
     > div > div[data-testid="stVerticalBlock"] > div[data-testid="element-container"] > div.stMarkdown > div[data-testid="stMarkdownContainer"] > div.tool-card-icon
