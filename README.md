@@ -2,7 +2,7 @@
 
 Nine Excel and PDF tools that handle the messy, manual cleanup work analysts do by hand every day: reconciling inconsistent headers, splitting bloated workbooks, diffing two versions of a file, pulling tables out of PDFs, and consolidating LCC and CIBIL reports. One Streamlit app, zero setup beyond `pip install`.
 
-**Live app:** https://merge-similar-excel.streamlit.app/
+**Live app:** https://getdataforge.streamlit.app/
 
 ![Data Forge home screen](assets/screenshot-home.png)
 
