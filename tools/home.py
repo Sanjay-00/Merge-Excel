@@ -3,7 +3,7 @@ import streamlit as st
 from core.pages import TOOL_PAGES
 from ui.shared import render_hero
 
-TOOL_ORDER = ["merge", "split", "concat", "diff", "trim", "reduce", "pdf"]
+TOOL_ORDER = ["merge", "split", "concat", "diff", "trim", "reduce", "pdf", "lcc", "cibil"]
 
 
 def _render_tool_card(entry):
@@ -18,7 +18,13 @@ def _render_tool_card(entry):
             f'{entry["icon"]}</div>',
             unsafe_allow_html=True,
         )
-        st.page_link(entry["page"], label=entry["page"].title, use_container_width=True)
+        # "url" entries are external tools hosted as separate apps (no
+        # st.Page of their own); st.page_link renders a raw https:// string
+        # as an external link automatically.
+        if "url" in entry:
+            st.page_link(entry["url"], label=entry["title"], use_container_width=True)
+        else:
+            st.page_link(entry["page"], label=entry["page"].title, use_container_width=True)
         st.markdown(f'<div class="tool-card-desc">{entry["description"]}</div>', unsafe_allow_html=True)
 
 

@@ -55,4 +55,23 @@ TOOL_PAGES = {
         "color": "#EF4444",
         "description": "Pull tables out of a text-layer PDF into a real Excel workbook.",
     },
+    # External tool, hosted as its own separate app - no "page" key, since
+    # st.Page only wraps pages within this app. st.page_link() accepts a raw
+    # https:// string directly and renders it as an external link.
+    "lcc": {
+        "url": "https://lcc-pdf2excel.streamlit.app/",
+        "title": "LCC to Master Excel",
+        "icon": "🧾",
+        "color": "#14B8A6",
+        "description": "Consolidate LCC PDFs into one master Excel file. Opens in a separate app.",
+    },
+    "cibil": {
+        "url": "https://autocam-cibil.streamlit.app/",
+        "title": "CIBIL to Excel",
+        "icon": "🏦",
+        "color": "#F97316",
+        "description": "Extract CIBIL report data into Excel. Opens in a separate app.",
+    },
 }
+
+EXTERNAL_TOOL_KEYS = [key for key, entry in TOOL_PAGES.items() if "url" in entry]

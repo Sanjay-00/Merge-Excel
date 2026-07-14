@@ -6,4 +6,4 @@ from tools.home import render_home_page
 
 def get_pages():
     home_page = st.Page(render_home_page, title="Home", icon="🏠", url_path="home", default=True)
-    return [home_page] + [entry["page"] for entry in TOOL_PAGES.values()]
+    return [home_page] + [entry["page"] for entry in TOOL_PAGES.values() if "page" in entry]

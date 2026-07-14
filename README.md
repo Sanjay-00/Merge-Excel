@@ -1,6 +1,6 @@
 # Data Forge
 
-Seven Excel and PDF tools that handle the messy, manual cleanup work analysts do by hand every day: reconciling inconsistent headers, splitting bloated workbooks, diffing two versions of a file, and pulling tables out of PDFs. One Streamlit app, zero setup beyond `pip install`.
+Nine Excel and PDF tools that handle the messy, manual cleanup work analysts do by hand every day: reconciling inconsistent headers, splitting bloated workbooks, diffing two versions of a file, pulling tables out of PDFs, and consolidating LCC and CIBIL reports. One Streamlit app, zero setup beyond `pip install`.
 
 **Live app:** https://merge-similar-excel.streamlit.app/
 
@@ -23,6 +23,8 @@ This app's merge and split tools are schema aware: they match renamed and trunca
 | **Trim Columns** | Clean whitespace, invisible characters, and inconsistent casing in specific columns. |
 | **Reduce Size** | Shrink an oversized Excel file with an honest before/after breakdown of what was removed. |
 | **PDF to Excel** | Pull tables out of a PDF, text layer or scanned, into a real Excel workbook. |
+| **LCC to Master Excel** | Consolidate LCC PDFs into one master Excel file. Opens in a separate app. |
+| **CIBIL to Excel** | Extract CIBIL report data into Excel. Opens in a separate app. |
 
 ## Running locally
 
